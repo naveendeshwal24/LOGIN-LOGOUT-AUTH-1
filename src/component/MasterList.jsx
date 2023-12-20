@@ -22,6 +22,7 @@ const MasterList = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [showNoRecordsPopup, setShowNoRecordsPopup] = useState(false);
   const [isLoggedin, setIsLoggedin] = useState(!!localStorage.getItem("token"));
+  const [timeoutId, setTimeoutId] = useState(null); //initial state for timout is null
 
   const navigate = useNavigate();
 
@@ -109,21 +110,46 @@ const MasterList = () => {
   const currentItems = filteredData.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-  useEffect(() => {
-    if (!isLoggedin) {
-      toast.success("LogOut Successfully");
-    }
-  }, [isLoggedin]);
+  //Auto Logout functionlity if the user is not intracting with the page
+  const handleUserActivity = () => {
+    resetAutoLogoutTimeout();
+  };
 
-  const handleLogOut = () => {
+  const handleLogOut = (isAutoLogout = false) => {
     localStorage.removeItem("token");
     setIsLoggedin(false);
-    toast.success("LogOut Successfully");
-    navigate("/LogIn", { replace: true });
+
+    const navigateToLogin = () => {
+      navigate("/LogIn", { replace: true });
+    };
+
+    if (isAutoLogout) {
+      toast.info("You have been automatically logged out due to inactivity.", {
+        onClose: navigateToLogin,
+      });
+    } else {
+      toast.success("LogOut Successfully", {
+        onClose: () => {
+          navigateToLogin(); // Manually triggered logout, use navigateToLogin directly
+        },
+      });
+    }
+  };
+  const setAutoLogoutTimeout = () => {
+    const timeout = setTimeout(() => {
+      handleLogOut(true); // Passing true to indicate auto-logout
+    }, 6000); // 6 seconds for testing; change this to your desired time
+
+    setTimeoutId(timeout);
+  };
+
+  const resetAutoLogoutTimeout = () => {
+    clearTimeout(timeoutId);
+    setAutoLogoutTimeout();
   };
 
   return (
-    <div>
+    <div onMouseMove={handleUserActivity}>
       <header className="registrationform-header">
         <div className="logo-container">
           <img src={logo} alt="logo" />
